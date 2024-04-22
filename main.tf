@@ -62,6 +62,7 @@ resource "azurerm_resource_group" "esh-dev-test" {
 #    azurerm_storage_container.esh-test-cont
 #  ]
 #}
+#
 
 resource "azurerm_virtual_network" "esh-test-net" {
   name                = "app-network"
