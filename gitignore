@@ -1,0 +1,15 @@
+.terragrunt-cache
+terragrunt_rendered.json
+
+# local terraform configuration
+.terraform/
+
+# local terraform lock file
+.terraform.lock.hcl
+
+# state files
+terraform.tfstate
+terraform.tfstate.*
+
+#Keys
+Azure-Key
