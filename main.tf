@@ -27,19 +27,19 @@ resource "azurerm_resource_group" "esh-dev-test" {
 }
 
 locals {
-  virtual_network ={
-    name="app-network"
-    address_space="10.0.0.0/16"
+  virtual_network = {
+    name          = "app-network"
+    address_space = "10.0.0.0/16"
   }
 
-  subnets=[
+  subnets = [
     {
-      name="subnetA"
-      address_prefix="10.0.0.0/24"
+      name           = "subnetA"
+      address_prefix = "10.0.0.0/24"
     },
     {
-      name="subnetB"
-      address_prefix="10.0.1.0/24"
+      name           = "subnetB"
+      address_prefix = "10.0.1.0/24"
     }
   ]
 }
@@ -121,8 +121,27 @@ resource "azurerm_network_interface" "esh-test-nic" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.SubnetA.id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.esh-test-pip.id
   }
   depends_on = [
     azurerm_subnet.SubnetA
   ]
+}
+
+output "subnetA-id" {
+  value = azurerm_subnet.SubnetA.id
+}
+
+resource "azurerm_public_ip" "esh-test-pip" {
+  name                = "test-pub-ip"
+  resource_group_name = azurerm_resource_group.esh-dev-test.name
+  location            = azurerm_resource_group.esh-dev-test.location
+  allocation_method   = "Static"
+  depends_on = [
+    azurerm_resource_group.esh-dev-test
+  ]
+
+  tags = {
+    environment = "Production"
+  }
 }
