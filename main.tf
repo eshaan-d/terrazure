@@ -88,20 +88,41 @@ resource "azurerm_virtual_network" "esh-test-net" {
   resource_group_name = azurerm_resource_group.esh-dev-test.name
   address_space       = [local.virtual_network.address_space]
   #dns_servers         = ["10.0.0.4", "10.0.0.5"]
-
-  subnet {
-    name           = local.subnets[0].name
-    address_prefix = local.subnets[0].address_prefix
-  }
-
-  subnet {
-    name           = local.subnets[1].name
-    address_prefix = local.subnets[1].address_prefix
-    #security_group = azurerm_network_security_group.example.id
-  }
-
-  tags = {
-    environment = "dev"
-  }
 }
 
+resource "azurerm_subnet" "SubnetA" {
+  name                 = local.subnets[0].name
+  resource_group_name  = azurerm_resource_group.esh-dev-test.name
+  virtual_network_name = local.virtual_network.name
+  address_prefixes     = [local.subnets[0].address_prefix]
+  depends_on = [
+    azurerm_virtual_network.esh-test-net
+  ]
+
+}
+
+resource "azurerm_subnet" "SubnetB" {
+  name                 = local.subnets[1].name
+  resource_group_name  = azurerm_resource_group.esh-dev-test.name
+  virtual_network_name = local.virtual_network.name
+  address_prefixes     = [local.subnets[1].address_prefix]
+  depends_on = [
+    azurerm_virtual_network.esh-test-net
+  ]
+
+}
+
+resource "azurerm_network_interface" "esh-test-nic" {
+  name                = "test-nic"
+  location            = azurerm_resource_group.esh-dev-test.location
+  resource_group_name = azurerm_resource_group.esh-dev-test.name
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.SubnetA.id
+    private_ip_address_allocation = "Dynamic"
+  }
+  depends_on = [
+    azurerm_subnet.SubnetA
+  ]
+}
