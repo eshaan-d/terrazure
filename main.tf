@@ -31,7 +31,19 @@ locals {
     name="app-network"
     address_space="10.0.0.0/16"
   }
+
+  subnets=[
+    {
+      name="subnetA"
+      address_prefix="10.0.0.0/24"
+    },
+    {
+      name="subnetB"
+      address_prefix="10.0.1.0/24"
+    }
+  ]
 }
+
 #resource "azurerm_storage_account" "esh-test-strg"{ 
 #  name                     = "teststrgesh03"
 #  resource_group_name      = azurerm_resource_group.esh-dev-test.name
@@ -78,13 +90,13 @@ resource "azurerm_virtual_network" "esh-test-net" {
   #dns_servers         = ["10.0.0.4", "10.0.0.5"]
 
   subnet {
-    name           = "subnetA"
-    address_prefix = "10.0.0.0/24"
+    name           = local.subnets[0].name
+    address_prefix = local.subnets[0].address_prefix
   }
 
   subnet {
-    name           = "subnetB"
-    address_prefix = "10.0.1.0/24"
+    name           = local.subnets[1].name
+    address_prefix = local.subnets[1].address_prefix
     #security_group = azurerm_network_security_group.example.id
   }
 
