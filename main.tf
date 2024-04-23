@@ -26,6 +26,12 @@ resource "azurerm_resource_group" "esh-dev-test" {
   location = "West Europe"
 }
 
+locals {
+  virtual_network ={
+    name="app-network"
+    address_space="10.0.0.0/16"
+  }
+}
 #resource "azurerm_storage_account" "esh-test-strg"{ 
 #  name                     = "teststrgesh03"
 #  resource_group_name      = azurerm_resource_group.esh-dev-test.name
@@ -65,10 +71,10 @@ resource "azurerm_resource_group" "esh-dev-test" {
 #
 
 resource "azurerm_virtual_network" "esh-test-net" {
-  name                = "app-network"
+  name                = local.virtual_network.name
   location            = azurerm_resource_group.esh-dev-test.location
   resource_group_name = azurerm_resource_group.esh-dev-test.name
-  address_space       = ["10.0.0.0/16"]
+  address_space       = [local.virtual_network.address_space]
   #dns_servers         = ["10.0.0.4", "10.0.0.5"]
 
   subnet {
