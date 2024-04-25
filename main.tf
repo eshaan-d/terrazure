@@ -145,3 +145,53 @@ resource "azurerm_public_ip" "esh-test-pip" {
     environment = "Production"
   }
 }
+
+resource "azurerm_network_security_group" "esh-test-nsg" {
+  name                = "app-nsg"
+  location            = azurerm_resource_group.esh-dev-test.location
+  resource_group_name = azurerm_resource_group.esh-dev-test.name
+
+  security_rule {
+    name                       = "AllowRDP"
+    priority                   = 300
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "3389"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+    depends_on = [
+      azurerm_resource_group.esh-dev-test
+    ]
+}
+
+resource "azurerm_subnet_network_security_group_association" "esh-test-nsga" {
+  subnet_id                 = azurerm_subnet.SubnetA.id
+  network_security_group_id = azurerm_network_security_group.esh-test-nsg.id
+}
+
+resource "azurerm_windows_virtual_machine" "esh-test-vm" {
+  name                = "app-vm"
+  resource_group_name = azurerm_resource_group.esh-dev-test.name
+  location            = azurerm_resource_group.esh-dev-test.location
+  size                = "Standard_D2S_V3"
+  admin_username      = "adminuser"
+  admin_password      = "Azure1234!"
+  network_interface_ids = [
+    azurerm_network_interface.esh-test-nic.id,
+  ]
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "MicrosoftWindowsServer"
+    offer     = "WindowsServer"
+    sku       = "2019-Datacenter"
+    version   = "latest"
+  }
+}
