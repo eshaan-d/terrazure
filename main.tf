@@ -9,11 +9,18 @@ in this terraform configuration file
 
 
 resource "azurerm_resource_group" "esh-dev-test" {
-  name     = "test-res"
-  location = "West Europe"
+  name     = local.resource_group.name
+  location = local.location
 }
 
 locals {
+
+  location = "West Europe"
+
+  resource_group = {
+    name = "test-res"
+  }
+
   virtual_network = {
     name          = "app-network"
     address_space = "10.0.0.0/16"
@@ -115,9 +122,9 @@ resource "azurerm_network_interface" "esh-test-nic" {
   ]
 }
 
-output "subnetA-id" {
-  value = azurerm_subnet.SubnetA.id
-}
+#output "subnetA-id" {
+#  value = azurerm_subnet.SubnetA.id
+#}
 
 resource "azurerm_public_ip" "esh-test-pip" {
   name                = "test-pub-ip"
@@ -131,6 +138,22 @@ resource "azurerm_public_ip" "esh-test-pip" {
   tags = {
     environment = "Production"
   }
+}
+
+resource "azurerm_network_interface" "esh-test-nic2" {
+  name                = "test-nic2"
+  location            = azurerm_resource_group.esh-dev-test.location
+  resource_group_name = azurerm_resource_group.esh-dev-test.name
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.SubnetA.id
+    private_ip_address_allocation = "Dynamic"
+    
+  }
+  depends_on = [
+    azurerm_subnet.SubnetA
+  ]
 }
 
 resource "azurerm_network_security_group" "esh-test-nsg" {
@@ -163,11 +186,12 @@ resource "azurerm_windows_virtual_machine" "esh-test-vm" {
   name                = "app-vm"
   resource_group_name = azurerm_resource_group.esh-dev-test.name
   location            = azurerm_resource_group.esh-dev-test.location
-  size                = "Standard_D2S_V3"
+  size                = "Standard_Ds1_V2"
   admin_username      = "adminuser"
   admin_password      = "Azure1234!"
   network_interface_ids = [
     azurerm_network_interface.esh-test-nic.id,
+    azurerm_network_interface.esh-test-nic2.id
   ]
 
   os_disk {
@@ -184,4 +208,20 @@ resource "azurerm_windows_virtual_machine" "esh-test-vm" {
   depends_on = [
     azurerm_network_interface.esh-test-nic
   ]
+}
+
+resource "azurerm_managed_disk" "test-disk" {
+  name                 = "appdisk"
+  location             = local.location
+  resource_group_name  = local.resource_group.name
+  storage_account_type = "Standard_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = "16"
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "esh-test-diskatt" {
+  managed_disk_id    = azurerm_managed_disk.test-disk.id
+  virtual_machine_id = azurerm_windows_virtual_machine.esh-test-vm.id
+  lun                = "10"
+  caching            = "ReadWrite"
 }
