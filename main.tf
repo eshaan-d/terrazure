@@ -7,19 +7,6 @@ in this terraform configuration file
 
 */
 
-terraform {
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "3.97.0"
-    }
-  }
-}
-
-provider "azurerm" {
-  skip_provider_registration = true
-  features {}
-}
 
 resource "azurerm_resource_group" "esh-dev-test" {
   name     = "test-res"
@@ -194,4 +181,7 @@ resource "azurerm_windows_virtual_machine" "esh-test-vm" {
     sku       = "2019-Datacenter"
     version   = "latest"
   }
+  depends_on = [
+    azurerm_network_interface.esh-test-nic
+  ]
 }
