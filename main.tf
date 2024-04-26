@@ -140,21 +140,6 @@ resource "azurerm_public_ip" "esh-test-pip" {
   }
 }
 
-resource "azurerm_network_interface" "esh-test-nic2" {
-  name                = "test-nic2"
-  location            = azurerm_resource_group.esh-dev-test.location
-  resource_group_name = azurerm_resource_group.esh-dev-test.name
-
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = azurerm_subnet.SubnetA.id
-    private_ip_address_allocation = "Dynamic"
-    
-  }
-  depends_on = [
-    azurerm_subnet.SubnetA
-  ]
-}
 
 resource "azurerm_network_security_group" "esh-test-nsg" {
   name                = "app-nsg"
@@ -162,13 +147,13 @@ resource "azurerm_network_security_group" "esh-test-nsg" {
   resource_group_name = azurerm_resource_group.esh-dev-test.name
 
   security_rule {
-    name                       = "AllowRDP"
+    name                       = "AllowSSH"
     priority                   = 300
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "3389"
+    destination_port_range     = "22"
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
@@ -182,16 +167,26 @@ resource "azurerm_subnet_network_security_group_association" "esh-test-nsga" {
   network_security_group_id = azurerm_network_security_group.esh-test-nsg.id
 }
 
-resource "azurerm_windows_virtual_machine" "esh-test-vm" {
+# RSA key of size 4096 bits
+resource "tls_private_key" "linux-key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "local_file" "linuxpremkey" {
+  content  = tls_private_key.linux-key.private_key_pem
+  filename = "linuxkey.pem"
+}
+
+resource "azurerm_linux_virtual_machine" "esh-test-vm" {
   name                = "app-vm"
   resource_group_name = azurerm_resource_group.esh-dev-test.name
   location            = azurerm_resource_group.esh-dev-test.location
-  size                = "Standard_Ds1_V2"
-  admin_username      = "adminuser"
-  admin_password      = "Azure1234!"
+  size                = "Standard_F2"
+  admin_username      = "linuxuser"
+  
   network_interface_ids = [
     azurerm_network_interface.esh-test-nic.id,
-    azurerm_network_interface.esh-test-nic2.id
   ]
 
   os_disk {
@@ -210,18 +205,3 @@ resource "azurerm_windows_virtual_machine" "esh-test-vm" {
   ]
 }
 
-resource "azurerm_managed_disk" "test-disk" {
-  name                 = "appdisk"
-  location             = local.location
-  resource_group_name  = local.resource_group.name
-  storage_account_type = "Standard_LRS"
-  create_option        = "Empty"
-  disk_size_gb         = "16"
-}
-
-resource "azurerm_virtual_machine_data_disk_attachment" "esh-test-diskatt" {
-  managed_disk_id    = azurerm_managed_disk.test-disk.id
-  virtual_machine_id = azurerm_windows_virtual_machine.esh-test-vm.id
-  lun                = "10"
-  caching            = "ReadWrite"
-}
